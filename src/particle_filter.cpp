@@ -24,31 +24,32 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	//   x, y, theta and their uncertainties from GPS) and all weights to 1.
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
+
+	num_particles = 200;
+
+	cout << "+ Nbr Particules " << particles.size() << " " << weights.size() << endl;
+
 	default_random_engine gen;
 	normal_distribution<double> dist_x(x, std[0]);
 	normal_distribution<double> dist_y(y, std[1]);
   normal_distribution<double> dist_theta(theta, std[2]);
 
-	particles.resize(num_particles);
-	weights.resize(num_particles);
+	cout << "++ Nbr Particules " << particles.size() << " " << weights.size() << endl;
 
 	for(int i=0; i < num_particles; i++) {
-		double sample_x, sample_y, sample_theta;
-    sample_x = dist_x(gen);
-    sample_y = dist_y(gen);
-    sample_theta = dist_theta(gen);
-
 		Particle p;
 		{
 			p.id=i;
-			p.x = sample_x;
-			p.y = sample_y;
-			p.theta = sample_theta;
+			p.x = dist_x(gen);
+			p.y = dist_y(gen);
+			p.theta = dist_theta(gen);
 			p.weight = 1;
 		}
 
 		particles.push_back(p);
 		weights.push_back(1);
+
+		cout << "Nbr Particules " << particles.size() << " " << weights.size() << endl;
 	}
 
 	is_initialized = true;
@@ -84,11 +85,13 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to
 	//   implement this method and use it as a helper during the updateWeights phase.
 
+	const int predicted_len = predicted.size();
+
 	for(int i=0; i < observations.size(); i++) {
 		LandmarkObs& obs = observations.at(i);
 
 		double min_dist = 0;
-		for(int j=0; j < predicted.size(); j++) {
+		for(int j=0; j < predicted_len; j++) {
 			LandmarkObs& pred = predicted.at(j);
 			double distance = dist(obs.x, obs.y, pred.x, pred.y);
 
@@ -121,12 +124,12 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	double gauss_norm= 1/(2 * M_PI * sig_x * sig_y);
 
 	for(int i=0; i < num_particles; i++) {
-		Particle p = particles.at(i);
+		Particle& p = particles.at(i);
 
 		vector<LandmarkObs> predicted;
 		{
-			for(int j=0; i < map_landmarks.landmark_list.size(); j++) {
-				Map::single_landmark_s sls = map_landmarks.landmark_list.at(j);
+			for(int j=0; j < map_landmarks.landmark_list.size(); j++) {
+				Map::single_landmark_s& sls = map_landmarks.landmark_list.at(j);
 				double distance = dist(sls.x_f, sls.y_f, p.x, p.y);
 
 				if (distance <= sensor_range) {
